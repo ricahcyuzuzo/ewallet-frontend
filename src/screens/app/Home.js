@@ -1,13 +1,27 @@
-import { StyleSheet, Text, View, Image, ScrollView } from 'react-native'
-import React from 'react'
+import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native'
+import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
-import { AntDesign, Feather, FontAwesome5, Fontisto,  MaterialCommunityIcons } from '@expo/vector-icons'
+import { AntDesign, Feather, FontAwesome5, Fontisto,  Ionicons,  MaterialCommunityIcons } from '@expo/vector-icons'
 import { colors } from '../../constants/colors'
-import GoPremium from '../../assets/GoPremium.png'
+import GoPremium from '../../assets/walletIcon.png'
 import promo from '../../assets/promo.png'
+import QRCode from 'react-native-qrcode-svg'
 
 const Home = ({ navigation }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible1, setModalVisible1] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+
+  const handleOpenClose = () => {
+    setModalVisible(!modalVisible)
+  }
+
+  const handleOpenClose1 = () => {
+    setModalVisible1(!modalVisible1);
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle='dark-content' />
@@ -23,27 +37,31 @@ const Home = ({ navigation }) => {
         </View>
         <View style={styles.premiumSection}>
           <Image source={GoPremium} style={styles.premiumImg} />
+          <View style={styles.texts}>
+            <Text style={styles.balance}>20,000 RWF</Text>
+            <Text style={styles.underBalance}>Manage your budget on your will</Text>
+          </View>
         </View>
 
         <Text style={styles.subtitle}>Features</Text>
 
         <View style={styles.featureView}>
-          <View>
+          <TouchableOpacity onPress={handleOpenClose}>
             <MaterialCommunityIcons name='refresh-auto' size={25} color={colors.violet} style={[styles.featureIcon, { backgroundColor: '#F3EFFF' }]} />
             <Text style={styles.feauteText}>Top Up</Text>
-          </View>
-          <View>
-            <Feather name='send' size={25} color={colors.warning} style={[styles.featureIcon, { backgroundColor: colors.warningBackground }]} />
-            <Text style={styles.feauteText}>Transfer</Text>
-          </View>
-          <View>
-            <Fontisto name='world-o' size={25} color={colors.primary} style={[styles.featureIcon, { backgroundColor: '#E8FFF1' }]} />
-            <Text style={styles.feauteText}>Internet</Text>
-          </View>
-          <View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleOpenClose1}>
+            <Feather name='download' size={25} color={colors.primary} style={[styles.featureIcon, { backgroundColor: colors.warningBackground }]} />
+            <Text style={styles.feauteText}>Receive</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Products')}>
+            <Fontisto name='archive' size={25} color={colors.warning} style={[styles.featureIcon, { backgroundColor: '#E8FFF1' }]} />
+            <Text style={styles.feauteText}>Products</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('History')}>
             <FontAwesome5 name='wallet' size={25} color={colors.error} style={[styles.featureIcon, { backgroundColor: '#FFF1F0' }]} />
-            <Text style={styles.feauteText}>Wallet</Text>
-          </View>
+            <Text style={styles.feauteText}>History</Text>
+          </TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={styles.subtitle}>Recent Transactions</Text>
@@ -76,7 +94,52 @@ const Home = ({ navigation }) => {
           </View>
         </ScrollView>
       </ScrollView>
-
+      <TouchableOpacity onPress={() => navigation.navigate('Scan')} style={styles.scan}>
+        <Ionicons name='scan' color={colors.white} size={24} />
+      </TouchableOpacity>
+      <Modal
+        animationType='fade'
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={handleOpenClose}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TouchableOpacity onPress={handleOpenClose} style={styles.closeButtonModal}>
+              <Ionicons name='close' size={24} color={colors.white} />
+            </TouchableOpacity>
+            <View style={styles.inputs}>
+              <TextInput placeholder='Amount to request' style={styles.amountToRequest} />
+              <TouchableOpacity style={styles.requestButton}>
+                <Text style={{ color: colors.white }}>Request</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType='fade'
+        transparent={true}
+        visible={modalVisible1}
+        onRequestClose={handleOpenClose1}
+      >
+        <View style={styles.centeredView1}>
+          <View style={styles.modalView1}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 20, textAlign: 'center' }}>Receive</Text>
+            <TouchableOpacity onPress={handleOpenClose1} style={styles.closeButtonModal}>
+              <Ionicons name='close' size={24} color={colors.white} />
+            </TouchableOpacity>
+            <View style={[styles.inputs, { alignItems: 'center',}]}>
+              <QRCode value='receiver_id' size={250} />
+              <Text style={{
+                fontSize: 20,
+                textAlign: 'center',
+                marginTop: 20,
+              }}>Scan this QR Code to send money here.</Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -98,27 +161,32 @@ const styles = StyleSheet.create({
   titleText: {
     fontWeight: 'bold',
     fontSize: 20,
-    fontFamily: 'cochin'
+    // fontFamily: 'cochin'
   },
   nameText: {
-    fontFamily: 'cochin',
+    // fontFamily: 'cochin',
     color: colors.subtitle
   },
   subtitle: {
-    fontFamily: 'cochin',
+    // fontFamily: 'cochin',
     fontWeight: 'bold',
     fontSize: 17,
     marginTop: 40
   },
-  premiumImg: {
+  premiumSection: {
+    marginTop: 30,
     width: '100%',
     height: 150,
-    resizeMode: 'center',
+    backgroundColor: colors.primary,
     borderRadius: 20,
-    alignSelf: 'center'
+    flexDirection: 'row'
   },
-  premiumSection: {
-    marginTop: 30
+  premiumImg:{
+    width: 120,
+    height: 120,
+    transform: [
+      { rotate: '-0.5rad'},
+    ]
   },
   featureView: {
     marginTop: 30,
@@ -192,5 +260,108 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: 'center',
     color: colors.warning,
+  },
+  scan: {
+    backgroundColor: colors.primary,
+    width: 50,
+    height: 50,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 40,
+    right: 40,
+  },
+  balance: {
+    fontSize: 25,
+    color: colors.white,
+    fontWeight: 'bold'
+  },
+  underBalance: {
+    color: colors.white,
+    width: 200,
+    flexWrap: 'wrap'
+  },
+  texts: {
+    marginTop: 10,
+    marginLeft: 10
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)'
+  },
+  modalView: {
+    width: '90%',
+    height: 300,
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  centeredView1: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)'
+  },
+  modalView1: {
+    width: '90%',
+    height: 500,
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  closeButtonModal: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    width: 30,
+    height: 30,
+  },
+  amountToRequest: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    width: '90%',
+    height: 50,
+    padding: 10,
+    borderRadius: 10,
+    margin: 5,
+  },
+  requestButton: {
+    width: '90%',
+    height: 50,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    margin: 5,
+  },
+  inputs: {
+    marginTop: 80,
+    alignSelf: 'center',
+    width: '90%',
   }
 })
