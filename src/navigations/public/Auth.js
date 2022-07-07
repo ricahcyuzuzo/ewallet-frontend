@@ -23,37 +23,6 @@ const Auth = () => {
                 headerTintColor: colors.white,
 
             }} />
-            <Stack.Screen name="Home" component={Home} options={{
-                headerShown: false,
-            }} />
-            <Stack.Screen name="History" component={History} options={{
-                headerShadowVisible: false,
-                headerStyle: {
-                    backgroundColor: colors.white,
-                    fontWeight: 'bold',
-                    fontSize: 20,
-                },
-                headerTintColor: colors.primary,
-            }} />
-            <Stack.Screen name="Products" component={Products} options={{
-                headerShadowVisible: false,
-                headerStyle: {
-                    backgroundColor: colors.white,
-                    fontWeight: 'bold',
-                    fontSize: 20,
-                },
-                headerTintColor: colors.primary,
-            }} />
-             <Stack.Screen name="Scan" component={Scan} options={{
-                headerShadowVisible: false,
-                headerStyle: {
-                    backgroundColor: colors.white,
-                    fontWeight: 'bold',
-                    fontSize: 20,
-                },
-                headerShown: false,
-                headerTintColor: colors.primary,
-            }} />
         </Stack.Navigator>
     )
 }

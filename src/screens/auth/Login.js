@@ -1,11 +1,15 @@
-import { Button, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React, { useState } from 'react'
+import { ActivityIndicator, Button, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useContext, useState } from 'react'
 import { colors } from '../../constants/colors'
 import Icon from '../../assets/Icon.png';
 import Input from '../../components/Input';
 import { country } from '../../assets/country';
 import { Entypo } from '@expo/vector-icons';
 import Country from '../../components/Country';
+import axios from 'axios';
+import { ENDPOINT } from '../../constants/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AppContext from '../app/Context';
 
 const Login = ({ navigation }) => {
     const [phone, setPhone] = useState('');
@@ -13,13 +17,36 @@ const Login = ({ navigation }) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [choosedCountry, setChoosedCountry ] = useState(country[0]);
     const [passwordVisible, setPasswordVisible] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const { setLoggedIn } = useContext(AppContext);
 
     const handleChange = (val) => {
         setPhone(val);
     }
+
+    const handleChangePassord = (val) => {
+        setPassword(val);
+    }
     
     const handleChangePasswordVisiblility = () => {
         setPasswordVisible(!passwordVisible);
+    }
+
+    const handleLogin = async () => {
+        setLoading(true);
+        axios.post(`${ENDPOINT}/login`, {
+            phone: `${choosedCountry.dial_code}${phone}`,
+            password
+        }).then(async res => {
+            setLoading(false);
+            console.log(res);
+            await AsyncStorage.setItem('token', res.data.token);
+            await AsyncStorage.setItem('loggedIn', 'true');
+            setLoggedIn(true);
+        }).catch(err => {
+            setLoading(false);
+            console.log(err.response.data);
+        })
     }
 
   return (
@@ -36,14 +63,14 @@ const Login = ({ navigation }) => {
         <Input handleTextChange={handleChange} isPassword={false} placeholder='Phone number' keyboardType='numeric' isPhone={true} />
       </View>
       <View style={{ marginTop: 30,}}>
-        <Input placeholder='Password' isPassword={passwordVisible} isPhone={false} handleTextChange={handleChange} keyboardType='default' />
+        <Input placeholder='Password' isPassword={passwordVisible} isPhone={false} handleTextChange={handleChangePassord} />
         <TouchableOpacity onPress={handleChangePasswordVisiblility} style={styles.eyeButton}>
             <Entypo name={passwordVisible ? 'eye' : 'eye-with-line'} size={24} color={colors.white} />
         </TouchableOpacity>
       </View>
       <View style={{ marginTop: 30,}}>
-        <TouchableOpacity onPress={()=> navigation.navigate('Home')} style={styles.loginButton}>
-            <Text style={styles.buttonText}>Login</Text>
+        <TouchableOpacity onPress={handleLogin} style={styles.loginButton}>
+            { loading ? <ActivityIndicator size={24} color={colors.white} /> :  <Text style={styles.buttonText}>Login</Text> }
         </TouchableOpacity>
       </View>
       <Country country={country} handleClose={() => setModalVisible(false)} modalVisible={modalVisible} setChoosedCountry={setChoosedCountry}  />

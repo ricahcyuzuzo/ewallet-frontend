@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { AntDesign, Feather, FontAwesome5, Fontisto,  Ionicons,  MaterialCommunityIcons } from '@expo/vector-icons'
@@ -7,12 +7,32 @@ import { colors } from '../../constants/colors'
 import GoPremium from '../../assets/walletIcon.png'
 import promo from '../../assets/promo.png'
 import QRCode from 'react-native-qrcode-svg'
+import axios from 'axios'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { ENDPOINT } from '../../constants/api'
 
 const Home = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalVisible1, setModalVisible1] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [data, setData] = useState();
+  const [requestAmount, setRequestAmount] = useState('');
 
+  useEffect(() => {
+    getData();
+  }, [])
+
+  const getData = async () => {
+   const token = await AsyncStorage.getItem('token');
+   axios.get(`${ENDPOINT}/transactions`, {
+      headers: {
+        Authorization: token
+      }
+   }).then(res => {
+    setData(res.data);
+    console.log(res.data);
+   }).catch(err => console.log(err));
+  }
 
   const handleOpenClose = () => {
     setModalVisible(!modalVisible)
@@ -31,15 +51,32 @@ const Home = ({ navigation }) => {
             <Text style={styles.titleText}>Hello!</Text>
             <Text style={styles.nameText}>Jimmy Sulivan</Text>
           </View>
-          <View style={styles.bellView}>
-            <FontAwesome5 name="bell" size={20} />
-          </View>
+          <TouchableOpacity onPress={async() => {
+            await AsyncStorage.setItem('loggedIn', 'false');
+          }} style={styles.bellView}>
+            <Ionicons name='log-out-outline' size={24} />
+          </TouchableOpacity>
         </View>
         <View style={styles.premiumSection}>
           <Image source={GoPremium} style={styles.premiumImg} />
           <View style={styles.texts}>
-            <Text style={styles.balance}>20,000 RWF</Text>
-            <Text style={styles.underBalance}>Manage your budget on your will</Text>
+            {data?.account ? <Text style={styles.balance}>{data?.account?.balance} RWF</Text> : <TouchableOpacity onPress={async () => {
+              setLoading(true);
+              const token = await AsyncStorage.getItem('token');
+
+              axios.post(`${ENDPOINT}/account`, {} , {
+                headers: {
+                  Authorization: token
+                }
+              }).then(res => {
+                getData();
+                setLoading(false);
+              }).catch(err => {
+                console.log(err)
+                setLoading(false);
+              })
+            }} style={{ padding: 5, backgroundColor: colors.white, borderRadius: 5, alignItems: 'center'}}>{loading ? <ActivityIndicator size='small' color={colors.primary} /> : <Text style={{ color: colors.primary}}>Add Account +</Text>}</TouchableOpacity>}
+            {data?.account ? <Text style={styles.underBalance}>Manage your budget on your will</Text> : <Text style={styles.underBalance}>You have no Account now, Please add one.</Text>}
           </View>
         </View>
 
@@ -68,15 +105,21 @@ const Home = ({ navigation }) => {
           <Text style={styles.viewAllText} onPress={() => navigation.navigate('History')} >View All</Text>
         </View>
         <ScrollView style={{ marginTop: 30 }} horizontal={true} showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}>
-          <View style={styles.promoDetails}>
-            <AntDesign name='gift' size={25} color={colors.white} style={[styles.promoIcon, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.nameText, { marginTop: 10, textAlign: 'center' }]}>Liam Okkur</Text>
-            <Text style={[styles.subtitle, { marginTop: 10, textAlign: 'center' }]}>0784302922</Text>
-            <View style={styles.promoAmount}>
-              <Text style={styles.promoAmountText}>+$ 80.00</Text>
-            </View>
-          </View>
-          <View style={styles.promoDetailsTopup}>
+          {
+            data?.transactions?.slice(0, 3).map((item, index) => {
+              return (
+                <View key={index} style={item.status === 'Incoming' ? styles.promoDetails : styles.promoDetailsSend }>
+                  <AntDesign name={item.status === 'Incoming' ? 'plus' : 'minus'} size={25} color={colors.white} style={[styles.promoIcon, { backgroundColor: item.status === 'Incoming' ? colors.primary : colors.error }]} />
+                  <Text style={[styles.nameText, { marginTop: 10, textAlign: 'center' }]}>{item.action}</Text>
+                  <Text style={[styles.subtitle, { marginTop: 10, textAlign: 'center' }]}>{item.status}</Text>
+                  <View style={styles.promoAmount}>
+                    <Text style={styles.promoAmountText}>{item.amount}</Text>
+                  </View>
+                </View>
+              )
+            })
+          }
+          {/* <View style={styles.promoDetailsTopup}>
             <MaterialCommunityIcons name='refresh-auto' size={25} color={colors.white} style={[styles.promoIcon, { backgroundColor: colors.warning }]} />
             <Text style={[styles.nameText, { marginTop: 10, textAlign: 'center' }]}>Liam Okkur</Text>
             <Text style={[styles.subtitle, { marginTop: 10, textAlign: 'center' }]}>0784302922</Text>
@@ -91,7 +134,7 @@ const Home = ({ navigation }) => {
             <View style={styles.promoAmount}>
               <Text style={styles.promoAmountTextSend}>+$ 80.00</Text>
             </View>
-          </View>
+          </View> */}
         </ScrollView>
       </ScrollView>
       <TouchableOpacity onPress={() => navigation.navigate('Scan')} style={styles.scan}>
@@ -109,9 +152,24 @@ const Home = ({ navigation }) => {
               <Ionicons name='close' size={24} color={colors.white} />
             </TouchableOpacity>
             <View style={styles.inputs}>
-              <TextInput placeholder='Amount to request' style={styles.amountToRequest} />
-              <TouchableOpacity style={styles.requestButton}>
-                <Text style={{ color: colors.white }}>Request</Text>
+              <TextInput placeholder='Amount to request' onChangeText={(val) => setRequestAmount(val)} style={styles.amountToRequest} />
+              <TouchableOpacity onPress={async () => {
+                setLoading(true);
+                const token = await AsyncStorage.getItem('token');
+                axios.patch(`${ENDPOINT}/recharge`, { amount: requestAmount }, {
+                  headers: {
+                    Authorization: token
+                  }
+                }).then(res => {
+                  console.log(res.data);
+                  getData();
+                  setLoading(false);
+                }).catch(err => {
+                  console.log(err.response.data)
+                  setLoading(false);
+                });
+              }} style={styles.requestButton}>
+                {loading ? <ActivityIndicator size='small' color={colors.white} /> : <Text style={{ color: colors.white }}>Request</Text>}
               </TouchableOpacity>
             </View>
           </View>

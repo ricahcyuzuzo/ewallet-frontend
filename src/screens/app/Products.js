@@ -1,15 +1,42 @@
-import { StyleSheet, Text, FlatList, View, TouchableOpacity, Modal, TextInput } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, FlatList, View, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AntDesign, Feather, FontAwesome5, Fontisto, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { colors } from '../../constants/colors'
+import axios from 'axios'
+import { ENDPOINT } from '../../constants/api'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import QRCode from 'react-native-qrcode-svg'
 
 
 const Products = () => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible1, setModalVisible1] = useState(false);
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [product, setProduct] = useState([]);
+  const [selectedItem, setSelectedItem] = useState();
 
+  useEffect(() => {
+    getProducts();
+  }, []);
   const handleOpenClose = () => {
     setModalVisible(!modalVisible)
+  }
+
+  const handleOpenClose1 = () => {
+    setModalVisible1(!modalVisible1)
+  }
+
+  const getProducts = async () => {
+    const token = await AsyncStorage.getItem('token');
+    axios.get(`${ENDPOINT}/products`, { headers: {
+      Authorization: token
+    }}).then((res) => {
+      console.log(res.data);
+      setProduct(res.data.results);
+    }).catch((err) => console.log(err));
   }
 
     const logs = [
@@ -18,20 +45,23 @@ const Products = () => {
 
     const itemToRender = ({ item }) => {
         return (
-            <View style={[styles.wrapper, { backgroundColor: '#E8FFF1',  padding: 10, marginTop: 10, }]}>
+            <TouchableOpacity onPress={() => {
+              setSelectedItem(item);
+              handleOpenClose1();
+            }} style={[styles.wrapper, { backgroundColor: '#E8FFF1',  padding: 10, marginTop: 10, }]}>
                 <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', padding: 10, marginTop: 10,}}>
                     <View style={{ flexDirection: 'row'}}>
                       <Feather name='archive' size={45} color={colors.primary} />
                       <View style={{ marginLeft: 10,}}>
                       <Text>{item.name}</Text>
-                      <Text style={{ marginTop: 5, color: '#4c4c4c'}}>Code: {item.code}</Text>
+                      <Text style={{ marginTop: 5, color: '#4c4c4c'}}>Code: {item.code.slice(0, 8)}</Text>
                       </View>
                     </View>
                     <View style={{ marginTop: 7,}}>
                         <Text>{item.price} RWF</Text>
                     </View>
                 </View>
-            </View>
+            </TouchableOpacity>
         )
     }
     return (
@@ -39,7 +69,7 @@ const Products = () => {
           <TouchableOpacity onPress={handleOpenClose} style={{ width: 50, height: 50, justifyContent: 'center', alignItems: 'center', borderRadius: 20, backgroundColor: colors.primary, marginBottom: 10,}}>
             <Feather name='plus' color={colors.white} size={24} />
           </TouchableOpacity>
-            <FlatList data={logs} renderItem={itemToRender} />
+            <FlatList data={product} renderItem={itemToRender} />
             <Modal
         animationType='fade'
         transparent={true}
@@ -52,11 +82,51 @@ const Products = () => {
               <Ionicons name='close' size={24} color={colors.white} />
             </TouchableOpacity>
             <View style={styles.inputs}>
-              <TextInput placeholder='Name' style={styles.amountToRequest} />
-              <TextInput placeholder='Price in RWF' style={styles.amountToRequest} />
-              <TouchableOpacity style={styles.requestButton}>
-                <Text style={{ color: colors.white }}>Create</Text>
+              <TextInput onChangeText={(val) => setName(val) } placeholder='Name' style={styles.amountToRequest} />
+              <TextInput onChangeText={(val) => setPrice(val) } placeholder='Price in RWF' style={styles.amountToRequest} />
+              <TouchableOpacity onPress={async () => {
+                const token = await AsyncStorage.getItem('token');
+                setLoading(true);
+                axios.post(`${ENDPOINT}/add-product`, {
+                  name,
+                  price
+                }, {
+                  headers: {
+                    Authorization: token
+                  }
+                }).then(res => {
+                  setLoading(false);
+                  setModalVisible(!modalVisible);
+                  getProducts();
+                }).catch(err => {
+                  setLoading(false);
+                }) 
+              }} style={styles.requestButton}>
+                { loading ? <ActivityIndicator size='small' color={colors.white} /> : <Text style={{ color: colors.white }}>Create</Text>}
               </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType='fade'
+        transparent={true}
+        visible={modalVisible1}
+        onRequestClose={handleOpenClose1}
+      >
+        <View style={styles.centeredView}>
+          <View style={[styles.modalView, { height: 500, alignItems: 'center',}]}>
+            <TouchableOpacity onPress={handleOpenClose1} style={styles.closeButtonModal}>
+              <Ionicons name='close' size={24} color={colors.white} />
+            </TouchableOpacity>
+            <View style={styles.inputs}>
+            <QRCode value={selectedItem?.code} size={250} />
+              <Text style={{
+                fontSize: 20,
+                textAlign: 'center',
+                marginTop: 20,
+              }}>Scan this QR Code to pay this {selectedItem.name} at {selectedItem.price} RWF. </Text>
             </View>
           </View>
         </View>
@@ -160,5 +230,6 @@ const styles = StyleSheet.create({
       marginTop: 80,
       alignSelf: 'center',
       width: '90%',
+      alignItems: 'center'
     }
 })

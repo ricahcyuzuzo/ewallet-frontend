@@ -1,0 +1,1 @@
+export const ENDPOINT = 'https://9498-102-22-164-58.ngrok.io/api';

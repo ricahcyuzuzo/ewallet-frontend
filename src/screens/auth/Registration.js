@@ -1,4 +1,4 @@
-import { Button, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Button, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useState } from 'react'
 import { colors } from '../../constants/colors'
 import Icon from '../../assets/Icon.png';
@@ -6,10 +6,14 @@ import Input from '../../components/Input';
 import { country } from '../../assets/country';
 import { Entypo } from '@expo/vector-icons';
 import Country from '../../components/Country';
+import axios from 'axios';
+import { ENDPOINT } from '../../constants/api';
 
 const Login = ({ navigation }) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
+    const [username, setUsername] = useState('');
+    const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [choosedCountry, setChoosedCountry ] = useState(country[0]);
     const [passwordVisible, setPasswordVisible] = useState(true);
@@ -17,12 +21,32 @@ const Login = ({ navigation }) => {
     const handlePhoneChange = (val) => {
         setPhone(val);
     }
-    const handleChange = (val) => {
-        setPhone(val);
+    const handleChangeUsername = (val) => {
+        setUsername(val);
+    }
+
+    const handleChangePassword = (val) => {
+        setPassword(val);
     }
     
     const handleChangePasswordVisiblility = () => {
         setPasswordVisible(!passwordVisible);
+    }
+
+    const handleRegister = () => {
+        setLoading(true)
+        axios.post(`${ENDPOINT}/user`, {
+            names: username,
+            phone: `${choosedCountry.dial_code}${phone}`,
+            password: password,
+            type: 'user'
+        }).then(res => {
+            setLoading(false);
+            navigation.navigate('Login');
+        }).catch(err => {
+            setLoading(false);
+            console.log(err.response.data)
+        });
     }
 
   return (
@@ -30,7 +54,7 @@ const Login = ({ navigation }) => {
       <StatusBar barStyle='light-content' backgroundColor={colors.primary} />
       <Image source={Icon} style={styles.image} />
       <View style={{ marginTop: 30,}}>
-        <Input placeholder='Full Names' isPassword={false} isPhone={false} handleTextChange={handlePhoneChange} keyboardType='default' />
+        <Input placeholder='Full Names' isPassword={false} isPhone={false} handleTextChange={handleChangeUsername} keyboardType='default' />
       </View>
       <View style={styles.inputViews}>
         <TouchableOpacity onPress={() => setModalVisible(!modalVisible)} style={styles.openCountry}>
@@ -38,23 +62,17 @@ const Login = ({ navigation }) => {
             <Text style={styles.flagColor}>{choosedCountry.flag}</Text>
             <Text style={styles.dialCode}>{choosedCountry.dial_code}</Text>
         </TouchableOpacity>
-        <Input handleTextChange={handleChange} isPassword={false} placeholder='Phone number' keyboardType='numeric' isPhone={true} />
+        <Input handleTextChange={handlePhoneChange} isPassword={false} placeholder='Phone number' keyboardType='numeric' isPhone={true} />
       </View>
       <View style={{ marginTop: 30,}}>
-        <Input placeholder='Password' isPassword={passwordVisible} isPhone={false} handleTextChange={handleChange} keyboardType='default' />
+        <Input placeholder='Password' isPassword={passwordVisible} isPhone={false} handleTextChange={handleChangePassword} keyboardType='default' />
         <TouchableOpacity onPress={handleChangePasswordVisiblility} style={styles.eyeButton}>
             <Entypo name={passwordVisible ? 'eye' : 'eye-with-line'} size={24} color={colors.white} />
         </TouchableOpacity>
       </View>
       <View style={{ marginTop: 30,}}>
-        <Input placeholder='Confirm Password' isPassword={passwordVisible} isPhone={false} handleTextChange={handleChange} keyboardType='default' />
-        <TouchableOpacity onPress={handleChangePasswordVisiblility} style={styles.eyeButton}>
-            <Entypo name={passwordVisible ? 'eye' : 'eye-with-line'} size={24} color={colors.white} />
-        </TouchableOpacity>
-      </View>
-      <View style={{ marginTop: 30,}}>
-        <TouchableOpacity style={styles.loginButton}>
-            <Text style={styles.buttonText}>Register</Text>
+        <TouchableOpacity onPress={handleRegister} style={styles.loginButton}>
+            {loading ? <ActivityIndicator size='small' color={colors.white} /> : <Text style={styles.buttonText}>Register</Text>}
         </TouchableOpacity>
       </View>
       <Country country={country} handleClose={() => setModalVisible(false)} modalVisible={modalVisible} setChoosedCountry={setChoosedCountry}  />
