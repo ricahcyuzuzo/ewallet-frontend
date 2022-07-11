@@ -39,10 +39,6 @@ const Products = () => {
     }).catch((err) => console.log(err));
   }
 
-    const logs = [
-        { name: "Mouse", price: 2000, code: 23 },
-        { name: "Keyboard", price: 2002, code: 21 }, ]
-
     const itemToRender = ({ item }) => {
         return (
             <TouchableOpacity onPress={() => {
@@ -121,12 +117,12 @@ const Products = () => {
               <Ionicons name='close' size={24} color={colors.white} />
             </TouchableOpacity>
             <View style={styles.inputs}>
-            <QRCode value={selectedItem?.code} size={250} />
+            <QRCode value={`pay,${selectedItem?.code}`} size={250} />
               <Text style={{
                 fontSize: 20,
                 textAlign: 'center',
                 marginTop: 20,
-              }}>Scan this QR Code to pay this {selectedItem.name} at {selectedItem.price} RWF. </Text>
+              }}>Scan this QR Code to pay this {selectedItem?.name} at {selectedItem?.price} RWF. </Text>
             </View>
           </View>
         </View>

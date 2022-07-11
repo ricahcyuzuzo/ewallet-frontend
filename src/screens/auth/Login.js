@@ -42,6 +42,8 @@ const Login = ({ navigation }) => {
             console.log(res);
             await AsyncStorage.setItem('token', res.data.token);
             await AsyncStorage.setItem('loggedIn', 'true');
+            await AsyncStorage.setItem('names', res.data.names);
+            await AsyncStorage.setItem('id', res.data.id);
             setLoggedIn(true);
         }).catch(err => {
             setLoading(false);

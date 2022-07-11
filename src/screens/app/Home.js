@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { AntDesign, Feather, FontAwesome5, Fontisto,  Ionicons,  MaterialCommunityIcons } from '@expo/vector-icons'
@@ -10,27 +10,36 @@ import QRCode from 'react-native-qrcode-svg'
 import axios from 'axios'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ENDPOINT } from '../../constants/api'
+import AppContext from './Context'
+import { useFocusEffect } from '@react-navigation/native'
 
 const Home = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalVisible1, setModalVisible1] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [name, setNames] = useState('');
   const [data, setData] = useState();
   const [requestAmount, setRequestAmount] = useState('');
+  const { setLoggedIn } = useContext(AppContext);
+  const [receiverId, setReceiverId] = useState('');
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     getData();
-  }, [])
+  }, []))
 
   const getData = async () => {
    const token = await AsyncStorage.getItem('token');
+   const names = await AsyncStorage.getItem('names');
+   const Id = await AsyncStorage.getItem('id');
+   setReceiverId(Id);
+   setNames(names)
    axios.get(`${ENDPOINT}/transactions`, {
       headers: {
         Authorization: token
       }
    }).then(res => {
     setData(res.data);
-    console.log(res.data);
+    console.log(res.data, 'Hellooooo');
    }).catch(err => console.log(err));
   }
 
@@ -48,11 +57,12 @@ const Home = ({ navigation }) => {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.headerView}>
           <View style={styles.titleView}>
-            <Text style={styles.titleText}>Hello!</Text>
-            <Text style={styles.nameText}>Jimmy Sulivan</Text>
+            <Text style={styles.titleText}>Hello</Text>
+            <Text style={styles.nameText}>{name}</Text>
           </View>
           <TouchableOpacity onPress={async() => {
             await AsyncStorage.setItem('loggedIn', 'false');
+            setLoggedIn(false);
           }} style={styles.bellView}>
             <Ionicons name='log-out-outline' size={24} />
           </TouchableOpacity>
@@ -163,6 +173,7 @@ const Home = ({ navigation }) => {
                 }).then(res => {
                   console.log(res.data);
                   getData();
+                  setModalVisible(!modalVisible)
                   setLoading(false);
                 }).catch(err => {
                   console.log(err.response.data)
@@ -188,7 +199,7 @@ const Home = ({ navigation }) => {
               <Ionicons name='close' size={24} color={colors.white} />
             </TouchableOpacity>
             <View style={[styles.inputs, { alignItems: 'center',}]}>
-              <QRCode value='receiver_id' size={250} />
+              <QRCode value={`send,${receiverId}`} size={250} />
               <Text style={{
                 fontSize: 20,
                 textAlign: 'center',

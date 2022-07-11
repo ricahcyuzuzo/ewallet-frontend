@@ -1,12 +1,17 @@
-import { StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { colors } from '../../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import { ENDPOINT } from '../../constants/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Scan = ({ navigation }) => {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     (async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
@@ -16,8 +21,60 @@ const Scan = ({ navigation }) => {
   }, []);
 
   const handleBarCodeScanned = ({ type, data }) => {
-    setScanned(true);
-    alert(`Bar code with type ${type} and data ${data} has been scanned!`);
+    setScanned(true)
+    Alert.alert('EWallet', 'Are you sure you want to proceed with this transaction?', [
+      {
+        text: 'Yes',
+        onPress: async () => {
+          setLoading(true)
+          const token = await AsyncStorage.getItem('token')
+          const qrData = data.split(',');
+          console.log(qrData);
+          if(qrData[0] === 'pay'){
+            axios.post(`${ENDPOINT}/pay`, {
+              code: qrData[1]
+            }, {
+              headers: {
+                Authorization: token
+              }
+            })
+            .then((res) => {
+              console.log(res.data);
+              setLoading(false)
+              navigation.goBack();
+            })
+            .catch(err => {
+              console.log(err);
+              setLoading(false);
+             });
+          }else{
+            axios.post(`${ENDPOINT}/send?receiver_id=${qrData[1]}`, {
+              amountToSend: 1000
+            }, {
+              headers: {
+                Authorization: token
+              }
+            })
+            .then((res) => {
+              console.log(res.data);
+              setLoading(false)
+              navigation.goBack();
+            })
+            .catch(err => {
+              console.log(err);
+              setLoading(false);
+             });
+          }
+        }
+      },
+      {
+        text: 'No',
+      }
+    ],
+    {
+      cancelable: true,
+    })
+
   };
 
   return (
@@ -40,7 +97,7 @@ const Scan = ({ navigation }) => {
             <Text style={{ color: colors.primary, textAlign: 'center', fontSize: 20, }}>Scan the QRCode to Send Money or Pay.</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.goBack()} style={{ alignSelf: 'center', marginTop: 40,width: '90%', height: 60, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary, borderRadius: 20, }}>
-            <Text style={{color: colors.white}}>Ok</Text>
+            {loading ? <ActivityIndicator size='small' color={colors.white} /> : <Text style={{color: colors.white}}>Ok</Text>}
           </TouchableOpacity>
          </View>
     </View>
