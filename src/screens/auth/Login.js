@@ -19,6 +19,7 @@ const Login = ({ navigation }) => {
     const [passwordVisible, setPasswordVisible] = useState(true);
     const [loading, setLoading] = useState(false);
     const { setLoggedIn } = useContext(AppContext);
+    const [error, setError] = useState('');
 
     const handleChange = (val) => {
         setPhone(val);
@@ -39,7 +40,6 @@ const Login = ({ navigation }) => {
             password
         }).then(async res => {
             setLoading(false);
-            console.log(res);
             await AsyncStorage.setItem('token', res.data.token);
             await AsyncStorage.setItem('loggedIn', 'true');
             await AsyncStorage.setItem('names', res.data.names);
@@ -47,12 +47,14 @@ const Login = ({ navigation }) => {
             setLoggedIn(true);
         }).catch(err => {
             setLoading(false);
-            console.log(err.response.data);
+            setError(err.response.data.message);
+
         })
     }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ backgroundColor: '#25c166'}}>
+        <View style={styles.container}>
       <StatusBar barStyle='light-content' backgroundColor={colors.primary} />
       <Text style={{ color: '#fff', fontSize: 18}}>Login</Text>
       <Image source={Icon} style={styles.image} />
@@ -74,9 +76,11 @@ const Login = ({ navigation }) => {
         <TouchableOpacity onPress={handleLogin} style={styles.loginButton}>
             { loading ? <ActivityIndicator size={24} color={colors.white} /> :  <Text style={styles.buttonText}>Login</Text> }
         </TouchableOpacity>
+        <Text style={{ color: '#a12a12', textAlign: 'center', marginTop: 20}}>{error}</Text>
       </View>
       <Country country={country} handleClose={() => setModalVisible(false)} modalVisible={modalVisible} setChoosedCountry={setChoosedCountry}  />
       <Text style = {styles.signUpText}>If you don't have account <Text onPress={()=> navigation.navigate('Registration')} style = {{ color: '#121a12' }}>Sign up Here.</Text></Text>
+      </View>
     </SafeAreaView>
   )
 }
@@ -106,7 +110,8 @@ const styles = StyleSheet.create({
         top: 11,
     },
     container: {
-        flex: 1,
+        width: '100%',
+        height: '100%',
         backgroundColor: '#25c166',
         padding: 30,
     },

@@ -50,7 +50,8 @@ const Login = ({ navigation }) => {
     }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ backgroundColor: '#25c166'}}>
+        <View style={styles.container}>
       <StatusBar barStyle='light-content' backgroundColor={colors.primary} />
       <Image source={Icon} style={styles.image} />
       <View style={{ marginTop: 30,}}>
@@ -76,6 +77,7 @@ const Login = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       <Country country={country} handleClose={() => setModalVisible(false)} modalVisible={modalVisible} setChoosedCountry={setChoosedCountry}  />
+      </View>
     </SafeAreaView>
   )
 }
@@ -105,7 +107,8 @@ const styles = StyleSheet.create({
         top: 11,
     },
     container: {
-        flex: 1,
+        width: '100%',
+        height: '100%',
         backgroundColor: '#25c166',
         padding: 30,
     },

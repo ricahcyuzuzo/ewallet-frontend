@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native'
+import { StyleSheet, Text, View, Image, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, RefreshControl } from 'react-native'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ENDPOINT } from '../../constants/api'
 import AppContext from './Context'
 import { useFocusEffect } from '@react-navigation/native'
+import jwtDecode from 'jwt-decode'
 
 const Home = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -22,15 +23,26 @@ const Home = ({ navigation }) => {
   const [requestAmount, setRequestAmount] = useState('');
   const { setLoggedIn } = useContext(AppContext);
   const [receiverId, setReceiverId] = useState('');
+  const [trans, setTrans] = useState([]);
+  const [userId, setUserId] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(useCallback(() => {
     getData();
-  }, []))
+  }, [userId]))
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    getData();
+    setRefreshing(false);
+  }, []);
 
   const getData = async () => {
    const token = await AsyncStorage.getItem('token');
    const names = await AsyncStorage.getItem('names');
    const Id = await AsyncStorage.getItem('id');
+   const decodedToken = jwtDecode(token);
+   setUserId(decodedToken?.user?._id);
    setReceiverId(Id);
    setNames(names)
    axios.get(`${ENDPOINT}/transactions`, {
@@ -39,7 +51,13 @@ const Home = ({ navigation }) => {
       }
    }).then(res => {
     setData(res.data);
-    console.log(res.data, 'Hellooooo');
+    const array = [];
+    res.data.transactions.forEach(element => {
+      if(element.fromId === decodedToken?.user?._id || element?.toId === decodedToken?.user?._id){
+        array.push(element);
+      }
+    });
+    setTrans(array);
    }).catch(err => console.log(err));
   }
 
@@ -54,7 +72,12 @@ const Home = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle='dark-content' />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      } showsVerticalScrollIndicator={false}>
         <View style={styles.headerView}>
           <View style={styles.titleView}>
             <Text style={styles.titleText}>Hello</Text>
@@ -114,16 +137,18 @@ const Home = ({ navigation }) => {
           <Text style={styles.subtitle}>Recent Transactions</Text>
           <Text style={styles.viewAllText} onPress={() => navigation.navigate('History')} >View All</Text>
         </View>
-        <ScrollView style={{ marginTop: 30 }} horizontal={true} showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}>
+        <ScrollView  style={{ marginTop: 30 }} horizontal={true} showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false}>
           {
-            data?.transactions?.slice(0, 3).map((item, index) => {
+            trans?.reverse().slice(0, 3).map((item, index) => {
+              console.log(item, 'item');
+              console.log(userId, 'User Id');
               return (
-                <View key={index} style={item.status === 'Incoming' ? styles.promoDetails : styles.promoDetailsSend }>
-                  <AntDesign name={item.status === 'Incoming' ? 'plus' : 'minus'} size={25} color={colors.white} style={[styles.promoIcon, { backgroundColor: item.status === 'Incoming' ? colors.primary : colors.error }]} />
+                <View key={index} style={item.fromId === userId && item.toId === userId ? styles.promoDetails : item.fromId === userId ? styles.promoDetailsSend : styles.promoDetails }>
+                  <AntDesign name={item.fromId === userId && item.toId === userId ? 'plus' : item.fromId === userId ? 'minus' : 'plus' } size={25} color={colors.white} style={[styles.promoIcon, { backgroundColor: item.fromId === userId && item.toId === userId ? colors.primary : item.toId === userId  ? colors.primary : colors.error }]} />
                   <Text style={[styles.nameText, { marginTop: 10, textAlign: 'center' }]}>{item.action}</Text>
-                  <Text style={[styles.subtitle, { marginTop: 10, textAlign: 'center' }]}>{item.status}</Text>
+                  <Text style={[styles.subtitle, { marginTop: 10, textAlign: 'center' }]}>{item.toId === userId ? 'Incoming' : 'Outgoing'}</Text>
                   <View style={styles.promoAmount}>
-                    <Text style={styles.promoAmountText}>{item.amount}</Text>
+                    <Text style={styles.promoAmountText}>{item.amount} RWF</Text>
                   </View>
                 </View>
               )
@@ -161,6 +186,7 @@ const Home = ({ navigation }) => {
             <TouchableOpacity onPress={handleOpenClose} style={styles.closeButtonModal}>
               <Ionicons name='close' size={24} color={colors.white} />
             </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginTop: 20 , width: 100, alignSelf: 'center'}}>Top Up</Text>
             <View style={styles.inputs}>
               <TextInput placeholder='Amount to request' onChangeText={(val) => setRequestAmount(val)} style={styles.amountToRequest} />
               <TouchableOpacity onPress={async () => {
@@ -286,7 +312,7 @@ const styles = StyleSheet.create({
     width: 180,
     backgroundColor: '#E8FFF1',
     padding: 35,
-    borderRadius: 25,
+    borderRadius: 20,
     marginRight: 15
 
   },
@@ -295,7 +321,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: 15,
     height: 35,
-    marginTop: 20
+    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   promoAmountText: {
     marginTop: 5,
@@ -315,6 +343,10 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: 'center',
     color: colors.error,
+  },
+  promoAmountText: {
+    marginTop: -1,
+    color: colors.primary,
   },
   promoDetailsTopup: {
     marginTop: 15,

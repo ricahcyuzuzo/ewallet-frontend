@@ -77,6 +77,8 @@ const Products = () => {
             <TouchableOpacity onPress={handleOpenClose} style={styles.closeButtonModal}>
               <Ionicons name='close' size={24} color={colors.white} />
             </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginTop: 20, width: 200, alignSelf: 'center'}}>Add Product</Text>
+
             <View style={styles.inputs}>
               <TextInput onChangeText={(val) => setName(val) } placeholder='Name' style={styles.amountToRequest} />
               <TextInput onChangeText={(val) => setPrice(val) } placeholder='Price in RWF' style={styles.amountToRequest} />
@@ -158,7 +160,7 @@ const styles = StyleSheet.create({
     },
     modalView: {
       width: '90%',
-      height: 300,
+      height: 350,
       margin: 20,
       backgroundColor: "white",
       borderRadius: 20,

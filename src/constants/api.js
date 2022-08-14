@@ -1,1 +1,1 @@
-export const ENDPOINT = 'https://9443-102-22-164-58.eu.ngrok.io/api';
+export const ENDPOINT = 'https://ewallet-huda.herokuapp.com/api';
